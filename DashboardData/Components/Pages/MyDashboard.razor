@@ -1,69 +1,87 @@
-﻿@using DashboardData.Models
-@using DashboardData.Services
-@page "/dashboard"
+﻿@page "/dashboard"
 @rendermode InteractiveServer
-@attribute [StreamRendering]
-@inject ISensorService SensorService
-@inject NavigationManager NavManager
+@using DashboardData.Models
+@using DashboardData.Services
+@inject ISensorService SensorService 
 
+<button class="btn btn-secondary mb-3" @onclick="LoadAll">Toutes les sondes</button>
+<button class="btn btn-danger mb-3" @onclick="LoadCritical">Alertes (> 30.0)</button>
 
-<PageTitle>Mon Dashboard Data</PageTitle>
-
-<h1>Tableau de Bord</h1>
-
-<div class="alert-info" >  
-    Bienvenue sur l'interface de pilotage.
-    Nous somes le : <strong>@DateTime.Now.ToString("dd MMM yyyy")</strong>
-</div>
-
-<p>
-    Status du système :
-
-    @if (IsSystemOK) { 
-        <span class="badge bg-success">Opérationnel</span>  
-    }
-    else  {
-            <span class="badge bg-danger">Erreur Critique</span>
-    }
-</p>
-
-@if(_isLoading) {
-    <p><em>Chargement des données...</em></p>
+@if (Sensors == null)
+{
+    <p>Chargement en cours...</p>
 }
-else {
-    <button class="btn btn-primary" @onclick="AddNewSensor">Add New</button>
+else
+{
+    <div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Sondes</h5>
+                <h2>@TotalSondes</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Moyenne Globale</h5>
+                <h2>@Moyenne.ToString("F1") °C</h2> <!-- F1 = 1 chiffre après la virgule -->
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Valeur Maximale</h5>
+                <h2>@Max.ToString("F1") °C</h2> <!-- F1 = 1 chiffre après la virgule -->
+            </div>
+        </div>
+    </div>
+</div>
     <table class="table table-striped">
         <thead>
             <tr>
                 <th>Capteur</th>
-                <th>Valeur</th>
+                <th>Lieu</th>
+                <th>Valeur Courante</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var sensor in _sensors)
+            @foreach (var sensor in Sensors)
             {
                 <tr>
                     <td>@sensor.Name</td>
+                    <!-- Grâce au Include(), Location n'est pas nul ! -->
+                    <td>@(sensor.Location?.Name ?? "Non défini")</td>
                     <td>@sensor.Value</td>
                 </tr>
             }
         </tbody>
-</table>
+    </table>
 }
 
 @code {
-
-    private bool IsSystemOK = true;
-    private List<SensorData> _sensors = new List<SensorData>();
-    private bool _isLoading = true;
+    int TotalSondes;
+    double Moyenne;
+    double Max;
+    private List<SensorData>? Sensors;
 
     protected override async Task OnInitializedAsync()
     {
-        _sensors = await SensorService.GetSensorDataAsync();
-        _isLoading = false;
+        await LoadAll();
+        TotalSondes = await SensorService.GetTotalCountAsync();
+        Moyenne = await SensorService.GetAverageValueAsync();
+        Max = await SensorService.GetMaxValueAsync();
     }
-    private void AddNewSensor(MouseEventArgs args)
+
+    private async Task LoadAll()
     {
-        NavManager.NavigateTo("/add-sensor");
+        Sensors = await SensorService.GetSensorDataAsync();
+    }
+
+    private async Task LoadCritical()
+    {
+        Sensors = await SensorService.GetCriticalSensorsAsync(30.0);
     }
 }

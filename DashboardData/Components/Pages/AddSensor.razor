@@ -35,9 +35,9 @@
 @code {
 
     private SensorData sensorData = new();
-    private void SaveSensor(MouseEventArgs args)
+    private async Task SaveSensor(MouseEventArgs args)
     {
-        SensorService.AddSensor(sensorData);
+        await SensorService.AddSensorAsync(sensorData);
         NavManager.NavigateTo("/dashboard");
     }
 }
