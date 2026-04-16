@@ -1,0 +1,17 @@
+@using DashboardData.Models
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <i class="bi-thermometer-half"></i>
+        <h5 class="card-title">@Sensor.Name</h5>
+        <p class="card-text">
+            
+            <strong>Lieu :</strong> @(Sensor.Location?.Name ?? "Non défini")<br />
+            <strong>Valeur Courante :</strong> @Sensor.Value
+        </p>
+    </div>
+</div>
+@code {
+[Parameter]
+public SensorData Sensor { get; set; } 
+}

@@ -1,0 +1,48 @@
+@using DashboardData.Models
+@using DashboardData.Services
+@inject ISensorService SensorService
+<table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Capteur</th>
+                <th>Lieu</th>
+                <th>Valeur Courante</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var sensor in Sensors)
+            {
+                <tr>
+                    <td>@sensor.Name</td>
+                    <!-- Grâce au Include(), Location n'est pas nul ! -->
+                    <td>@(sensor.Location?.Name ?? "Non défini")</td>
+                    <td>@sensor.Value</td>
+                    <td>
+                        <a href="/edit-sensor/@sensor.Id" class="btn btn-sm btn-outline-primary">Éditer</a>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => TriggerDelete(sensor.Id)">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+@code {
+    private async Task LoadAll()
+    {
+        Sensors = await SensorService.GetSensorDataAsync();
+    }
+    [Parameter]
+    public List<SensorData> Sensors { get; set; } = new();
+    [Parameter]
+    public EventCallback<int> OnDeleteClicked { get; set; }
+
+    private async Task TriggerDelete(int id)
+    {
+        await OnDeleteClicked.InvokeAsync(id);
+    }
+    
+}

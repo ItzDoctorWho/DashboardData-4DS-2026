@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using DashboardData.Models
 @using DashboardData.Services
+@using DashboardData.Components.UI
 @inject ISensorService SensorService 
 
 <button class="btn btn-secondary mb-3" @onclick="LoadAll">Toutes les sondes</button>
@@ -13,58 +14,41 @@
 }
 else
 {
+    <!-- Dans MyDashboard.razor -->
     <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-primary">
-            <div class="card-body">
-                <h5 class="card-title">Total Sondes</h5>
-                <h2>@TotalSondes</h2>
-            </div>
+        <div class="col-md-4 mb-3">
+            <!-- On passe les paramètres comme de simples attributs HTML -->
+            <KpiCard Title="Total Sondes" Value="@TotalSondes.ToString()"
+                    BackgroundColorClass="bg-primary" IconClass="bi-box-seam" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <KpiCard Title="Moyenne Globale" Value="@($"{Moyenne:F1} °C")"
+                    BackgroundColorClass="bg-success" IconClass="bi-bullseye" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <KpiCard Title="Alerte Max" Value="@($"{Max:F1} °C")"
+                    BackgroundColorClass="bg-danger" IconClass="bi-exclamation-triangle-fill" />
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-success">
-            <div class="card-body">
-                <h5 class="card-title">Moyenne Globale</h5>
-                <h2>@Moyenne.ToString("F1") °C</h2> <!-- F1 = 1 chiffre après la virgule -->
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-danger">
-            <div class="card-body">
-                <h5 class="card-title">Valeur Maximale</h5>
-                <h2>@Max.ToString("F1") °C</h2> <!-- F1 = 1 chiffre après la virgule -->
-            </div>
-        </div>
-    </div>
-</div>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Capteur</th>
-                <th>Lieu</th>
-                <th>Valeur Courante</th>
-            </tr>
-        </thead>
-        <tbody>
+    <button class="btn btn-outline-secondary mb-3" @onclick="() => ShowAsCards = !ShowAsCards">
+        <i class="bi bi-arrow-left-right"></i> Changer de Vue
+    </button>
+    <!-- On relie l'événement de l'enfant à la méthode DeleteSensor du parent -->
+    @if (ShowAsCards)
+    {
+        <div class="row">
             @foreach (var sensor in Sensors)
             {
-                <tr>
-                    <td>@sensor.Name</td>
-                    <!-- Grâce au Include(), Location n'est pas nul ! -->
-                    <td>@(sensor.Location?.Name ?? "Non défini")</td>
-                    <td>@sensor.Value</td>
-                    <td>
-                        <a href="/edit-sensor/@sensor.Id" class="btn btn-sm btn-outline-primary">Éditer</a>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSensor(sensor.Id)">Supprimer</button>
-                    </td>
-                </tr>
+                <div class="col-md-4">
+                    <SensorCard Sensor="sensor" />
+                </div>
             }
-        </tbody>
-    </table>
+        </div>
+    }
+    else
+    {
+        <SensorTable Sensors="Sensors" OnDeleteClicked="DeleteSensor" />
+    }
     <a href="/edit-sensor" class="btn btn-success mb-3">+ Nouveau Capteur</a>
     
 }
@@ -74,6 +58,8 @@ else
     double Moyenne;
     double Max;
     private List<SensorData>? Sensors;
+    
+    private bool ShowAsCards = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,6 +82,7 @@ else
     private async Task DeleteSensor(int id)
     {
         await SensorService.DeleteSensorAsync(id);
-        await LoadAll(); // Rafraîchit la liste après suppression
+        await LoadAll();
     }
+
 }

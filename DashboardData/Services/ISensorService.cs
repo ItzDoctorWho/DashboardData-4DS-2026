@@ -15,6 +15,7 @@ namespace DashboardData.Services
         Task AddSensorAsync(SensorData sensor);
         Task UpdateSensorAsync(SensorData sensor);
         Task DeleteSensorAsync(int id);
+        Task ReloadSensorAsync(SensorData sensor);
     }
 
     public class SensorService : ISensorService
@@ -28,6 +29,10 @@ namespace DashboardData.Services
             _context = context;
         }
 
+        public async Task ReloadSensorAsync(SensorData sensor)
+        {
+            await _context.Entry(sensor).ReloadAsync();
+        }
         public async Task<List<SensorData>> GetSensorDataAsync()
         {
             // EF Core traduit Include par un JOIN SQL vers la table Location
