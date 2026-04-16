@@ -1,0 +1,98 @@
+@page "/edit-sensor"
+@page "/edit-sensor/{Id:int}"
+@rendermode InteractiveServer
+@using DashboardData.Models
+@using DashboardData.Services
+@inject ISensorService SensorService
+@inject NavigationManager NavigationManager
+
+
+<!-- Titre dynamique selon le mode -->
+<h3>@(Id.HasValue ? "Modifier le Capteur" : "Ajouter un Nouveau Capteur")</h3>
+
+@if (currentSensor == null)
+{
+    <p><em>Chargement du formulaire...</em></p>
+}
+else
+{
+    <EditForm Model="currentSensor" OnValidSubmit="HandleValidSubmit">
+        <!-- Active la validation basée sur les[Data Annotations] du modèle -->
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label class="form-label">Nom du capteur :</label>
+            <!-- InputText remplace <input type="text"> -->
+            <InputText @bind-Value="currentSensor.Name" class="form-control" />
+            <ValidationMessage For="@(() => currentSensor.Name)" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Localisation :</label>
+            <!-- InputSelect se lie à la clé étrangère LocationId -->
+            <InputSelect @bind-Value="currentSensor.LocationId" class="form-select">
+                <option value="0">-- Sélectionnez un lieu --</option>
+                @foreach (var loc in Locations)
+                {
+                    <option value="@loc.Id">@loc.Name (@loc.Building)</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => currentSensor.LocationId)" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Valeur encours :</label>
+            <InputNumber @bind-Value="currentSensor.Value" class="form-control" />
+            <ValidationMessage For="@(() => currentSensor.Value)" class="text-danger" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a href="/dashboard" class="btn btn-secondary">Annuler</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private SensorData? currentSensor;
+    private List<Location> Locations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. Chargement des lieux pour remplir la liste déroulante
+        Locations = await SensorService.GetLocationsAsync();
+
+        // 2. Initialisation du capteur courant
+        if (Id.HasValue)
+        {
+            // Mode Édition : On récupère les données de la base
+            currentSensor = await SensorService.GetSensorByIdAsync(Id.Value);
+        }
+        
+        // Mode Création (ou si l\'ID fourni est introuvable) : on instancie un objet vide
+        if (currentSensor == null)
+        {
+            currentSensor = new SensorData();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Cette méthode n\'est appelée QUE si le formulaire est valide
+        if (Id.HasValue)
+        {
+            // Mise à jour (UPDATE)
+            await SensorService.UpdateSensorAsync(currentSensor);
+        }
+        else
+        {
+            // Ajout (INSERT)
+            await SensorService.AddSensorAsync(currentSensor);
+        }
+        
+        // Redirection vers le Dashboard après succès
+        NavigationManager.NavigateTo("/dashboard");
+    }
+}

@@ -6,11 +6,15 @@ namespace DashboardData.Services
     public interface ISensorService
     {
         Task<List<SensorData>> GetSensorDataAsync();
-        Task AddSensorAsync(SensorData sensorData);
         Task<List<SensorData>> GetCriticalSensorsAsync(double threshold);
         Task<int> GetTotalCountAsync();
         Task<double> GetAverageValueAsync();
         Task<double> GetMaxValueAsync();
+        Task<List<Location>> GetLocationsAsync();
+        Task<SensorData?> GetSensorByIdAsync(int id);
+        Task AddSensorAsync(SensorData sensor);
+        Task UpdateSensorAsync(SensorData sensor);
+        Task DeleteSensorAsync(int id);
     }
 
     public class SensorService : ISensorService
@@ -31,14 +35,14 @@ namespace DashboardData.Services
                 .Include(s => s.Location) 
                 .ToListAsync();
         }
-        public async Task AddSensorAsync(SensorData sensor)
-        {
-            // 1. On prépare l'ajout en mémoire
-            _context.Sensors.Add(sensor);
+        // public async Task AddSensorAsync(SensorData sensor)
+        // {
+        //     // 1. On prépare l'ajout en mémoire
+        //     _context.Sensors.Add(sensor);
             
-            // 2. On valide la transaction (Génère le INSERT INTO SQL)
-            await _context.SaveChangesAsync(); 
-        }
+        //     // 2. On valide la transaction (Génère le INSERT INTO SQL)
+        //     await _context.SaveChangesAsync(); 
+        // }
 
         public async Task<List<SensorData>> GetCriticalSensorsAsync(double threshold)
         {
@@ -65,6 +69,55 @@ namespace DashboardData.Services
         public async Task<double> GetMaxValueAsync()
         {
             return await _context.Sensors.MaxAsync(s => s.Value);
+        }
+
+        public async Task<List<Location>> GetLocationsAsync()
+        {
+            return await _context.Locations.ToListAsync();
+        }
+
+        public async Task<SensorData?> GetSensorByIdAsync(int id)
+        {
+            // FindAsync cherche directement par la Clé Primaire (Id)
+            return await _context.Sensors.FindAsync(id);
+        }
+
+        public async Task AddSensorAsync(SensorData sensor)
+        {
+            sensor.LastUpdate = DateTime.Now;
+            
+            // Historisation de la valeur initiale (TP5)
+            sensor.Values.Add(new SensorValueHistory {
+                Value = sensor.Value,
+                Timestamp = DateTime.Now
+            });
+
+            _context.Sensors.Add(sensor);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateSensorAsync(SensorData sensor)
+        {
+            sensor.LastUpdate = DateTime.Now; // Mise à jour de la date
+            
+            // Ajout à l'historique lors d'une modification (TP5)
+            sensor.Values.Add(new SensorValueHistory {
+                Value = sensor.Value,
+                Timestamp = DateTime.Now
+            });
+
+            _context.Sensors.Update(sensor);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteSensorAsync(int id)
+        {
+            var sensor = await _context.Sensors.FindAsync(id);
+            if (sensor != null)
+            {
+                _context.Sensors.Remove(sensor);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

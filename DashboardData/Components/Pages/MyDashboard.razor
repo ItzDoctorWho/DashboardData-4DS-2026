@@ -55,10 +55,18 @@ else
                     <!-- Grâce au Include(), Location n'est pas nul ! -->
                     <td>@(sensor.Location?.Name ?? "Non défini")</td>
                     <td>@sensor.Value</td>
+                    <td>
+                        <a href="/edit-sensor/@sensor.Id" class="btn btn-sm btn-outline-primary">Éditer</a>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSensor(sensor.Id)">Supprimer</button>
+                    </td>
                 </tr>
             }
         </tbody>
     </table>
+    <a href="/edit-sensor" class="btn btn-success mb-3">+ Nouveau Capteur</a>
+    
 }
 
 @code {
@@ -83,5 +91,11 @@ else
     private async Task LoadCritical()
     {
         Sensors = await SensorService.GetCriticalSensorsAsync(30.0);
+    }
+
+    private async Task DeleteSensor(int id)
+    {
+        await SensorService.DeleteSensorAsync(id);
+        await LoadAll(); // Rafraîchit la liste après suppression
     }
 }
